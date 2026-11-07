@@ -1,6 +1,15 @@
 const express = require('express');
 const UserData = require('../models/UserData');
+const Workout = require('../models/Workout');
 const { authenticateToken } = require('../middleware/auth');
+const { validatePagination } = require('../utils/pagination');
+const {
+  validateWorkoutSession,
+  toInternalWorkout,
+  upsertByClientId,
+  validateDateRange,
+  toApiFormat,
+} = require('../services/workoutService');
 
 const router = express.Router();
 
@@ -158,6 +167,84 @@ router.get('/data', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Sync data error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /v1/sync/workouts
+router.post('/workouts', authenticateToken, async (req, res) => {
+  try {
+    const { server_user_id, client_workout_id, workout } = req.body;
+
+    if (!server_user_id || server_user_id !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    if (typeof client_workout_id !== 'string' || client_workout_id.trim().length === 0) {
+      return res.status(400).json({ error: 'Invalid or missing client_workout_id. Expected non-empty string.' });
+    }
+
+    const validation = validateWorkoutSession(workout, { requireClientId: false });
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const { created, workout: savedWorkout } = await upsertByClientId(
+      req.userId,
+      client_workout_id,
+      toInternalWorkout(workout)
+    );
+
+    return res.status(created ? 201 : 200).json({
+      server_workout_id: savedWorkout._id.toString(),
+      client_workout_id: savedWorkout.clientWorkoutId,
+      synced_at: savedWorkout.updatedAt.getTime(),
+    });
+  } catch (err) {
+    console.error('Sync workouts error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /v1/sync/workouts
+router.get('/workouts', authenticateToken, async (req, res) => {
+  try {
+    const { server_user_id, start_date, end_date } = req.query;
+
+    if (!server_user_id || server_user_id !== req.userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const pagination = validatePagination(req.query);
+    if (!pagination.valid) {
+      return res.status(pagination.error.status).json({ error: pagination.error.message });
+    }
+
+    const filter = { userId: req.userId };
+    if (start_date || end_date) {
+      const range = validateDateRange(start_date, end_date);
+      if (!range.valid) {
+        return res.status(400).json({ error: range.error });
+      }
+      filter.startedAt = { $gte: range.gte, $lte: range.lte };
+    }
+
+    const total = await Workout.countDocuments(filter);
+    const workouts = await Workout.find(filter)
+      .sort({ startedAt: -1 })
+      .skip((pagination.page - 1) * pagination.limit)
+      .limit(pagination.limit);
+
+    return res.status(200).json({
+      workouts: workouts.map(toApiFormat),
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+      },
+    });
+  } catch (err) {
+    console.error('Get sync workouts error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

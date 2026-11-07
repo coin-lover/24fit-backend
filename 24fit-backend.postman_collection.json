@@ -365,6 +365,157 @@
       ]
     },
     {
+      "name": "\ud83c\udfcb\ufe0f Workouts (Protected)",
+      "item": [
+        {
+          "name": "Push Workout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/sync/workouts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sync",
+                "workouts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"server_user_id\": \"{{user_id}}\",\n  \"client_workout_id\": \"{{client_workout_id}}\",\n  \"workout\": {\n    \"name\": \"Push day\",\n    \"started_at\": \"2026-11-07T09:00:00.000\",\n    \"finished_at\": \"2026-11-07T10:05:00.000\",\n    \"exercises\": [\n      {\n        \"exercise_id\": \"bench-press\",\n        \"exercise_name\": \"Bench Press (Barbell)\",\n        \"category\": \"Chest\",\n        \"sets\": [\n          { \"set_number\": 1, \"kg\": 60, \"reps\": 10, \"rest_seconds\": 90, \"done\": true, \"distance_km\": null, \"time_seconds\": null, \"logged_at\": \"2026-11-07T09:05:00.000\" },\n          { \"set_number\": 2, \"kg\": 60, \"reps\": 8, \"rest_seconds\": 90, \"done\": true, \"distance_km\": null, \"time_seconds\": null, \"logged_at\": null }\n        ]\n      },\n      {\n        \"exercise_id\": \"run\",\n        \"exercise_name\": \"Run\",\n        \"category\": \"Cardio\",\n        \"sets\": [\n          { \"set_number\": 1, \"kg\": null, \"reps\": null, \"rest_seconds\": 0, \"done\": true, \"distance_km\": 5, \"time_seconds\": 1500, \"logged_at\": null }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            "description": "Idempotent upsert keyed by client_workout_id. New \u2192 201; duplicate \u2192 200 last-write-wins. Returns { server_workout_id, client_workout_id, synced_at }."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Workouts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/sync/workouts?server_user_id={{user_id}}&page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sync",
+                "workouts"
+              ],
+              "query": [
+                {
+                  "key": "server_user_id",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "start_date",
+                  "value": ""
+                },
+                {
+                  "key": "end_date",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Paginated workout list. Optional start_date/end_date (YYYY-MM-DD) filter on started_at. Returns { workouts, pagination } with derived volume_kg / total_sets / duration_minutes."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Workout",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/workouts/{{workout_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "workouts",
+                "{{workout_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Push day (edited)\",\n  \"started_at\": \"2026-11-07T09:00:00.000\",\n  \"finished_at\": \"2026-11-07T10:15:00.000\",\n  \"exercises\": [\n    {\n      \"exercise_id\": \"bench-press\",\n      \"exercise_name\": \"Bench Press (Barbell)\",\n      \"category\": \"Chest\",\n      \"sets\": [\n        { \"set_number\": 1, \"kg\": 62.5, \"reps\": 10, \"rest_seconds\": 90, \"done\": true, \"distance_km\": null, \"time_seconds\": null, \"logged_at\": \"2026-11-07T09:05:00.000\" }\n      ]\n    }\n  ]\n}"
+            },
+            "description": "Overwrite a workout by server id. client_workout_id cannot be modified. Returns { server_workout_id, updated_at }. 404 if not found."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Workout",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/workouts/{{workout_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "workouts",
+                "{{workout_id}}"
+              ]
+            },
+            "description": "Hard delete a workout by server id. Returns 204; 404 if not found."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "\ud83d\udcd6 Read (Protected)",
       "item": [
         {
@@ -830,6 +981,16 @@
     },
     {
       "key": "meal_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workout_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "client_workout_id",
       "value": "",
       "type": "string"
     }
