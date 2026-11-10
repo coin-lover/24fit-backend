@@ -8,10 +8,16 @@ const ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
 const REFRESH_EXPIRY_DAYS = parseInt(process.env.JWT_REFRESH_EXPIRY || '7d', 10);
 
 function generateAccessToken(user) {
+  // 'none' issues a token without exp — valid until revoked (no revocation
+  // mechanism exists; deleting the user invalidates the sub lookup downstream).
+  const signOptions = { algorithm: 'HS256' };
+  if (ACCESS_EXPIRY.trim().toLowerCase() !== 'none') {
+    signOptions.expiresIn = ACCESS_EXPIRY;
+  }
   return jwt.sign(
     { sub: user._id.toString(), email: user.email },
     ACCESS_SECRET,
-    { algorithm: 'HS256', expiresIn: ACCESS_EXPIRY }
+    signOptions
   );
 }
 
